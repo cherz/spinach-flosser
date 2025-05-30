@@ -2,37 +2,189 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Joel</title>
+  <title>Spinach Removal CAPTCHA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style type="text/css">
     html,
     body {
-      background: pink;
+      background: #f0f8ff;
       margin: 0;
       padding: 0;
-      font-family: sans-serif;
+      font-family: 'Arial', sans-serif;
     }
 
     #captcha-container {
       background: white;
       width: 390px;
       height: 300px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 
-    /* Your style here... */
+    #instructions {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #2c3e50;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      z-index: 100;
+      border: 2px solid #e74c3c;
+    }
+
+    #mouth-container {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 280px;
+      height: 200px;
+      background-image: url('mouth.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border-radius: 12px;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .spinach {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background-image: url('spinach.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 50;
+    }
+
+    .spinach:hover {
+      transform: scale(1.2);
+      filter: brightness(1.2);
+    }
+
+    .spinach.removing {
+      animation: removeSpinach 0.5s ease-out forwards;
+    }
+
+    @keyframes removeSpinach {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.5) rotate(180deg);
+        opacity: 0.7;
+      }
+      100% {
+        transform: scale(0) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    #progress {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      text-align: center;
+      font-size: 12px;
+      color: #7f8c8d;
+      font-weight: bold;
+    }
+
+    #progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #ecf0f1;
+      border-radius: 4px;
+      margin-top: 5px;
+      overflow: hidden;
+    }
+
+    #progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #e74c3c, #c0392b);
+      width: 0%;
+      transition: width 0.3s ease;
+      border-radius: 4px;
+    }
+
+    .success-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #27ae60;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      opacity: 0;
+      z-index: 200;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    .success-message.show {
+      animation: successPop 0.8s ease-out forwards;
+    }
+
+    @keyframes successPop {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+      }
+      60% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+      }
+      100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    /* Fallback for missing images */
+    #mouth-container {
+      background-color: #ffdbdb;
+      border: 3px solid #ff9999;
+    }
+
+    .spinach {
+      padding: 2px;
+    }
   </style>
 </head>
 
 <body>
   <div id="captcha-container">
-    <!-- Add your CAPTCHA here: -->
-    Hello world!
+    <div id="instructions">
+    Remove all the spinach from these teeth!
+    </div>
+    
+    <div id="mouth-container">
+      <!-- Spinach pieces will be positioned here -->
+    </div>
+    
+    <div id="progress">
+      <div>Spinach removed: <span id="removed-count">0</span>/8</div>
+      <div id="progress-bar">
+        <div id="progress-fill"></div>
+      </div>
+    </div>
 
-    <!-- We've added a sample button. Feel free to remove it: -->
-    <button id="solve">
-      Solve!
-    </button>
   </div>
 
   <script type="text/javascript">
@@ -42,9 +194,118 @@
         window.top.postMessage("success", '*');
       }
 
-      // Your CAPTCHA code goes here, we've added a simple example below:
-      document.getElementById('solve')
-           .addEventListener('click', () => captchaSuccess());
+      // Game state
+      let spinachRemoved = 0;
+      const totalSpinach = 8;
+      
+      // Predefined positions for spinach pieces (relative to mouth container)
+      const spinachPositions = [
+        { left: '28%', top: '31%' },   // Upper left teeth
+        { left: '36%', top: '29%' },   // Upper left-center
+        { left: '50%', top: '30%' },   // Upper center-left
+        { left: '69%', top: '35%' },   // Upper center-right
+        { left: '69%', top: '77%' },   // Upper right teeth
+        { left: '25%', top: '75%' },   // Lower left teeth
+        { left: '41%', top: '79%' },   // Lower center-left
+        { left: '56%', top: '81%' }    // Lower right teeth
+      ];
+
+      // Create spinach pieces
+      function createSpinach() {
+        const mouthContainer = document.getElementById('mouth-container');
+        
+        spinachPositions.forEach((position, index) => {
+          const spinach = document.createElement('div');
+          spinach.className = 'spinach';
+          spinach.id = `spinach-${index}`;
+          spinach.style.left = position.left;
+          spinach.style.top = position.top;
+          
+          // Add click handler
+          spinach.addEventListener('click', function() {
+            removeSpinach(this);
+          });
+          
+          mouthContainer.appendChild(spinach);
+        });
+      }
+
+      // Remove spinach piece
+      function removeSpinach(spinachElement) {
+        if (spinachElement.classList.contains('removing')) {
+          return; // Already being removed
+        }
+        
+        spinachElement.classList.add('removing');
+        spinachRemoved++;
+        
+        // Update progress
+        updateProgress();
+        
+        // Remove element after animation
+        setTimeout(() => {
+          spinachElement.remove();
+          
+          // Check if all spinach is removed
+          if (spinachRemoved >= totalSpinach) {
+            setTimeout(() => {
+              captchaSuccess()
+            }, 200);
+          }
+        }, 500);
+      }
+
+      // Update progress display
+      function updateProgress() {
+        const removedCountEl = document.getElementById('removed-count');
+        const progressFillEl = document.getElementById('progress-fill');
+        
+        removedCountEl.textContent = spinachRemoved;
+        
+        const percentage = (spinachRemoved / totalSpinach) * 100;
+        progressFillEl.style.width = percentage + '%';
+      }
+
+      // Add some random movement to make spinach pieces feel more "stuck"
+      function addSpinachWiggle() {
+        const spinachPieces = document.querySelectorAll('.spinach');
+        spinachPieces.forEach(spinach => {
+          // Add subtle hover wiggle effect
+          spinach.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('removing')) {
+              this.style.animation = 'none';
+              setTimeout(() => {
+                this.style.animation = 'wiggle 0.3s ease-in-out';
+              }, 10);
+            }
+          });
+        });
+      }
+
+      // Add wiggle animation CSS
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes wiggle {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(-2deg); }
+          75% { transform: rotate(2deg); }
+        }
+      `;
+      document.head.appendChild(style);
+
+      // Initialize the game
+      function initGame() {
+        createSpinach();
+        updateProgress();
+        
+        // Add wiggle effects after a short delay
+        setTimeout(() => {
+          addSpinachWiggle();
+        }, 500);
+      }
+
+      // Start the game when the page loads
+      initGame();
 
     })(window, document);
   </script>
